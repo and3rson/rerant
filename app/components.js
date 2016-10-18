@@ -173,6 +173,7 @@ export class RantListItem extends Component {
                                 {this.state.rant.text}
                             </Text>
                             {img}
+                            <Text>Comments: {this.state.rant.num_comments}</Text>
                         </View>
                     </View>
                 </View>
@@ -185,14 +186,81 @@ export class Voting extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            object: props.object
         }
     }
     render() {
         return (
             <View style={{marginRight: 10}}>
-                <Button style={styles.voteButton}>++</Button>
-                <Text style={styles.voteScore}>{this.props.object.score}</Text>
-                <Button style={styles.voteButton}>--</Button>
+                <Button style={(this.state.object.vote_state == 1) ? styles.voteButtonHitGood : styles.voteButton} onPress={this.vote.bind(this, this.state.object.vote_state ? 0 : 1)}>++</Button>
+                <Text style={styles.voteScore}>{this.state.object.score}</Text>
+                <Button style={(this.state.object.vote_state == -1) ? styles.voteButtonHitBad : styles.voteButton} onPress={this.vote.bind(this, this.state.object.vote_state ? 0 : -1)}>--</Button>
+            </View>
+        )
+    }
+    vote(value) {
+        api.assert(() => {
+            if (this.props.objectType == 'rant') {
+                api.voteRant(this.props.object.id, value, (data) => {
+                    this.setState({object: data.rant});
+                    console.log('Vote accepted!');
+                });
+            }
+        });
+    }
+}
+
+export class UserBox extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            user: props.user
+        }
+    }
+    render() {
+        if (!this.state.user) {
+            return null;
+        }
+        var avatar = this.state.user.avatar.i ? {uri: 'https://avatars.devrant.io/' + this.state.user.avatar.i} : require('../img/icon.png');
+        return (
+            <View style={styles.colCollapsed}>
+                <View style={styles.row}>
+                    <View style={styles.colCollapsed}>
+                        <Image style={{width: 48, height: 48, margin: 10}} source={avatar}/>
+                    </View>
+                    <View style={styles.col}>
+                        <Text style={{paddingTop: 10}}>
+                            {this.state.user.username}
+                        </Text>
+                        <Text style={{paddingTop: 10}}>
+                            {this.state.user.score}
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        )
+    }
+}
+
+export class CommentListItem extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            comment: props.comment
+        }
+    }
+    render() {
+        return (
+            <View style={styles.commentListItem}>
+                <UserBox user={{
+                    id: this.state.comment.user_id,
+                    username: this.state.comment.user_username,
+                    avatar: this.state.comment.user_avatar,
+                    score: this.state.comment.user_score,
+                }} />
+                <Text style={{padding: 10, paddingLeft: 68}}>
+                    {this.state.comment.body}
+                </Text>
             </View>
         )
     }

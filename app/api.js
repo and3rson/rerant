@@ -1,70 +1,86 @@
+import {
+    AsyncStorage
+} from 'react-native';
+
 class DevRantApi {
     constructor() {
         this.baseUrl = 'https://www.devrant.io/api';
-        this.authToken = null;
+        this._authToken = null;
     }
-    setAuthToken(newAuthToken) {
-        this.authToken = newAuthToken;
+    setAuthToken(newAuthToken, callback) {
+        AsyncStorage.setItem('authToken', JSON.stringify(newAuthToken)).catch((err) => {
+            console.error('Failed to set authToken!');
+        });
+    }
+    getAuthToken(callback) {
+        AsyncStorage.getItem('authToken').then((data) => {
+            console.log(data);
+            callback(JSON.parse(data));
+        }).catch((err) => {
+            callback(null);
+        });
     }
     request(method, url, data, callback, errorCallback) {
         data = data || {};
         data.app = 3;
-        if (this.authToken) {
-            data.token_key = this.authToken.key;
-            data.token_id = this.authToken.id;
-            data.user_id = this.authToken.user_id;
-        }
-        var finalUrl = '';
-        var body = '';
-        if (method == 'GET' || method == 'DELETE') {
-            pairs = [];
-            Object.keys(data).forEach((key) => {
-                pairs.push(key + '=' + encodeURIComponent(data[key]));
-            });
-            finalUrl = this.baseUrl + url + '?' + pairs.join('&');
-            params = {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-        } else {
-            finalUrl = this.baseUrl + url;
-            params = {
-                method: method,
-                body: JSON.stringify(data),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-        }
-        console.log(params.method, finalUrl, params.body || '<no body>');
-        fetch(finalUrl, params).then((response) => {
-            // if (response.status >= 400 ) {
-            //     console.log('CODE BAD:', response);
-            //     response = JSON.parse(response);
-            //     console.log('CODE BAD:', response);
-            //     throw new Error(response.error || response.message);
-            // }
-            return response.json();
-        }).then(
-            (responseJson) => {
-                if (!responseJson.success) {
-                    if (errorCallback) {
-                        // console.log('RESPONSE:', responseJson.error || responseJson.message);
-                        errorCallback(responseJson.error || responseJson.message);
-                    } else {
-                        console.error('API error:', responseJson);
+        this.getAuthToken((authToken) => {
+            if (authToken) {
+                data.token_key = authToken.key;
+                data.token_id = authToken.id;
+                data.user_id = authToken.user_id;
+            }
+            var finalUrl = '';
+            var body = '';
+            if (method == 'GET' || method == 'DELETE') {
+                pairs = [];
+                Object.keys(data).forEach((key) => {
+                    pairs.push(key + '=' + encodeURIComponent(data[key]));
+                });
+                finalUrl = this.baseUrl + url + '?' + pairs.join('&');
+                params = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                } else {
-                    callback(responseJson);
+                };
+            } else {
+                finalUrl = this.baseUrl + url;
+                params = {
+                    method: method,
+                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+            }
+            console.log(params.method, finalUrl, params.body || '<no body>');
+            fetch(finalUrl, params).then((response) => {
+                // if (response.status >= 400 ) {
+                //     console.log('CODE BAD:', response);
+                //     response = JSON.parse(response);
+                //     console.log('CODE BAD:', response);
+                //     throw new Error(response.error || response.message);
+                // }
+                return response.json();
+            }).then(
+                (responseJson) => {
+                    if (!responseJson.success) {
+                        if (errorCallback) {
+                            // console.log('RESPONSE:', responseJson.error || responseJson.message);
+                            errorCallback(responseJson.error || responseJson.message);
+                        } else {
+                            console.error('API error:', responseJson);
+                        }
+                    } else {
+                        callback(responseJson);
+                    }
                 }
-            }
-        ).catch(
-            (error) => {
-                console.error('HTTP error:', error);
-            }
-        );
+            ).catch(
+                (error) => {
+                    console.error('HTTP error:', error);
+                }
+            );
+        });
     }
     getRants(callback, skip) {
         skip = skip || 0;
@@ -101,27 +117,37 @@ class DevRantApi {
             username: username,
             password: password
         }, ((data) => {
-            this.authToken = data.auth_token;
             this.setAuthToken(data.auth_token);
+            // this.setAuthToken(data.auth_token);
             callback();
         }).bind(this), ((errorMessage) => {
             errorCallback(errorMessage);
         }).bind(this))
     }
     logout() {
-        this.authToken = null;
         this.setAuthToken(null);
     }
-    isAuthorized() {
-        return !!this.authToken;
+    getAuthorized(callback) {
+        this.getAuthToken((authToken) => {
+            callback(!!authToken);
+        });
     }
-    getAuthToken() {
-        return this.authToken;
-    }
-    getUserId() {
-        return this.authToken ? this.authToken.user_id : null;
+    getUserId(callback) {
+        this.getAuthToken((authToken) => {
+            return authToken ? authToken.user_id : null;
+        });
     }
     assert(callback) {
+        this.getAuthToken((authToken) => {
+            if (authToken) {
+                callback();
+            } else {
+                // TODO: Modal
+                console.error('You are not authorized!');
+            }
+        });
+        return;
+
         if (this.authToken) {
             callback();
         } else {

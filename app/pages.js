@@ -5,7 +5,8 @@ import {
     Text,
     ScrollView,
     RefreshControl,
-    TextInput
+    TextInput,
+    ListView
 } from 'react-native';
 
 import Button from 'react-native-button';
@@ -17,7 +18,9 @@ import {
 } from './styles';
 
 import {
-    RantListView
+    RantListView,
+    UserBox,
+    CommentListItem
 } from './components';
 
 import { api } from './api';
@@ -44,10 +47,15 @@ export class RantPage extends Component {
     }
     constructor(props) {
         super(props);
-        this.state= {
+        this.ds = new ListView.DataSource({
+            rowHasChanged: (r1, r2) => r1 !== r2
+        });
+        this.state = {
             rant: {},
-            refreshing: true
+            refreshing: true,
+            dataSource: this.ds
         };
+        this.userBox = null;
         this.loadRant();
     }
     loadRant() {
@@ -56,23 +64,46 @@ export class RantPage extends Component {
                 rant: data.rant,
                 refreshing: false
             });
+            this.setState({
+                dataSource: this.state.dataSource.cloneWithRows(data.comments)
+            });
+            this.userBox.setState({
+                user: {
+                    id: data.rant.user_id,
+                    username: data.rant.user_username,
+                    avatar: data.rant.user_avatar,
+                    score: data.rant.user_score
+                }
+            });
         });
     }
     onRefresh() {
         this.setState({refreshing: true, rant: {}});
         this.loadRant();
     }
-    render(route, navigator) {
+    render() {
         return (
             <ScrollView
-                style={styles.container}
+                style={styles.rowVertical}
                 refreshControl={
                     <RefreshControl refreshing={this.state.refreshing} onRefresh={this.onRefresh.bind(this)} />
                 }
             >
-                <Text>
-                    {this.state.rant.text}
-                </Text>
+                <UserBox ref={(ref) => this.userBox = ref} />
+                <View style={styles.colCollapsed} style={{
+                    borderBottomWidth: 2,
+                    borderColor: '#CCCCCC'
+                }}>
+                    <Text style={{padding: 10, paddingLeft: 68}}>
+                        {this.state.rant.text}
+                    </Text>
+                </View>
+                <ListView
+                    style={styles.commentListView}
+                    scrollEnabled={false}
+                    dataSource={this.state.dataSource}
+                    renderRow={(comment) => <CommentListItem comment={comment}/>}
+                />
             </ScrollView>
         )
     }
@@ -82,15 +113,15 @@ export class LoginPage extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            username: '',
-            password: ''
+            username: 'andunai',
+            password: '11235813'
         };
     }
     render() {
         return (
             <View style={styles.container} padding={16}>
-                <TextInput padding={16} placeholder="Login" value={this.username} onChangeText={(value) => this.setState({username: value})} />
-                <TextInput padding={16} placeholder="Password" value={this.password} onChangeText={(value) => this.setState({password: value})} />
+                <TextInput padding={16} placeholder="Login" value={this.state.username} onChangeText={(value) => this.setState({username: value})} />
+                <TextInput padding={16} placeholder="Password" value={this.state.password} onChangeText={(value) => this.setState({password: value})} />
                 <Button paddingTop={16} style={styles.button} onPress={this.login.bind(this)}>LOG IN</Button>
             </View>
         )
@@ -98,7 +129,7 @@ export class LoginPage extends Component {
     login() {
         api.login(this.state.username, this.state.password, (data) => {
             console.log('Login successful!');
-            context._navigator.replace({id: 'feed', title: 'Feed'});
+            context._navigator.replace({id: 'feed', title: 'reRant'});
         }, (error) => {
             console.log('Failed to log in:', error);
         })

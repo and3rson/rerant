@@ -6,7 +6,9 @@ import {
 exports.styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#FF0000'
         // justifyContent: 'center',
         // alignItems: 'center',
         // backgroundColor: '#F5FCFF',
@@ -103,6 +105,10 @@ exports.styles = StyleSheet.create({
     row: {
         flexDirection: 'row'
     },
+    rowVertical: {
+        flex: 1,
+        flexDirection: 'column'
+    },
     col: {
         flex: 10
     },
@@ -112,6 +118,18 @@ exports.styles = StyleSheet.create({
 
     voteButton: {
         backgroundColor: '#DDDDDD',
+        color: '#FFFFFF',
+        fontSize: 16,
+        padding: 10
+    },
+    voteButtonHitGood: {
+        backgroundColor: '#00AA00',
+        color: '#FFFFFF',
+        fontSize: 16,
+        padding: 10
+    },
+    voteButtonHitBad: {
+        backgroundColor: '#AA0000',
         color: '#FFFFFF',
         fontSize: 16,
         padding: 10
@@ -131,5 +149,16 @@ exports.styles = StyleSheet.create({
         height: 200,
         resizeMode: 'cover',
         flex: 1
+    },
+
+    commentListView: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#FF0000',
+        paddingLeft: 32,
+    },
+    commentListItem: {
+        borderBottomWidth: 1,
+        borderColor: '#CCCCCC'
     }
 });
